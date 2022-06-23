@@ -9,6 +9,7 @@ function handleRequest(req, res) {
   req.on('data', (chunk) => {
     store += chunk;
   });
+  req.on('end', () => {
   if (req.method === 'GET' && req.url === '/') {
     fs.readFile('./index.html', (err, content) => {
       res.setHeader('Content-Type', 'text/html');
@@ -45,10 +46,15 @@ function handleRequest(req, res) {
       res.end(content);
     });
   }
-  req.on('end', () => {
-    if (req.method === 'POST' && req.url === '/form') {
-      console.log(req.headers['content-type']);
+  
+   else if(req.method === 'POST' && req.url === '/form') {
+      // console.log(req.headers['content-type']);
+  
       let parseData = qs.parse(store);
+      // console.log(parseData);
+      if(!parseData.username){
+        return res.end("user name is required");
+      }
       fs.open(
         __dirname + '/contacts/' + parseData.username + '.json',
         'wx',
@@ -57,30 +63,33 @@ function handleRequest(req, res) {
           fs.write(fd, JSON.stringify(parseData), (err) => {
             if (err) return console.log(err);
             fs.close(fd, () => {
-              res.end('contacts saved');
+              res.end('contacts saved successfully');
             });
           });
         }
       );
     }
-    if (req.method === 'GET' && parsedUrl.pathname === '/users') {
+  else if(req.method === 'GET' && parsedUrl.pathname === '/users') {
       var username = parsedUrl.query.username;
+      console.log(username);
       fs.readFile(
         __dirname + '/contacts/' + username + '.json',
         (err, content) => {
-          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Content-Type', 'text/html');
           let parseData = JSON.parse(content);
 
-          res.end(`<h1>${parseData.name}</h1>
-                <h2>${parseData.email}</h2>
+          res.end(`<h1>${parseData.name}</h1> 
+              <h2>${parseData.email}</h2>
                 <h2>${parseData.username}</h2>
                 <h2>${parseData.age}</h2>
                 <h2>${parseData.bio}</h2>`);
         }
       );
+    } else {
+      res.end("page not found");
     }
   });
-}
+} 
 
 server.listen(5000, () => {
   console.log('port 5k started');
